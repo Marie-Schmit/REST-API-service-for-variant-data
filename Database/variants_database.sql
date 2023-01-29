@@ -1,34 +1,42 @@
 PRAGMA foreign_keys = true;
 
-CREATE TABLE IF NOT EXISTS chromosomes(
-	chromosome_id INT,
-	genome_id INT NOT NULL,
-	PRIMARY KEY (chromosome_id)
+CREATE TABLE IF NOT EXISTS genomes(
+	genome_id INT,
+	genome_name TEXT,
+	PRIMARY KEY (genome_id)
 );
 
 CREATE TABLE IF NOT EXISTS variants_observed(
 	variant_id INT,
-	chromosome_id INT,
-	position INT NOT NULL,
+	genome_id INT,
 	quality INT,
 	filter TEXT,
-	genotype INT,
-	genotype_quality INT,
-	read_depth INT,
-	PRIMARY KEY (variant_id, chromosome_id),
-	FOREIGN KEY (chromosome_id)
-		REFERENCES chromosomes (chromosome_id)
+	info_id INT,
+	PRIMARY KEY (variant_id, genome_id),
+	FOREIGN KEY (genome_id)
+		REFERENCES genomes (genome_id)
 );
 
 CREATE TABLE IF NOT EXISTS variants(
 	variant_id INT,
-	var_type STRING,
-	reference STRING,
-	alteration STRING,
-	PRIMARY KEY (variant_id),
+	var_type TEXT,
+	reference TEXT,
+	alteration TEXT,
+	position INT,
+	chomosome INT,
+	PRIMARY KEY (variant_id)
 	FOREIGN KEY (variant_id)
-		REFERENCES variants_observed (variant_id)
+		REFERENCES variants_observed(variant_id)
 );
 
-INSERT INTO chromosomes (chromosome_id, genome_id)
+CREATE TABLE IF NOT EXISTS infos(
+	info_id INT,
+	info_format TEXT,
+	info_values TEXT,
+	PRIMARY KEY (info_id)
+	FOREIGN KEY (info_id)
+		REFERENCES variants_observed(variant_id)
+);
+
+INSERT INTO genomes (genome_id, genome_name)
 VALUES(1, 7208);

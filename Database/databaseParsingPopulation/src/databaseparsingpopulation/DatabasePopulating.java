@@ -4,6 +4,10 @@
  */
 package databaseparsingpopulation;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -24,12 +28,12 @@ public class DatabasePopulating extends javax.swing.JFrame {
     static final String url = "jdbc:sqlite:C:/Users/marie/Documents/Cranfield/DataIntegration_InteractionNetworks/Assignment/REST-API-service-for-variant-data/Database/variants_database.sqlite";
     
     //File nqme
-    public String fileName;
+    public String filePath;
     
     //Set containing primary keys
     static Set<String> setChromosomes = new HashSet<String>();
     static Set<String> setVariants = new HashSet<String>();
-    static Set<String> setObservedVariants = new HashSet<String>();
+    static Set<String[]> setObservedVariants = new HashSet<String[]>();
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -40,25 +44,102 @@ public class DatabasePopulating extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        vcfChooser = new javax.swing.JFileChooser();
+        jLabel1 = new javax.swing.JLabel();
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        vcfChooser.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                vcfChooserActionPerformed(evt);
+            }
+        });
+
+        jLabel1.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        jLabel1.setText("Please select vcf file to add to database");
+        jLabel1.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
+            .addComponent(vcfChooser, javax.swing.GroupLayout.DEFAULT_SIZE, 700, Short.MAX_VALUE)
+            .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGap(0, 4, Short.MAX_VALUE)
+                .addComponent(jLabel1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(vcfChooser, javax.swing.GroupLayout.PREFERRED_SIZE, 406, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void vcfChooserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vcfChooserActionPerformed
+        // TODO add your handling code here:
+        System.out.println("Choosen file: " + vcfChooser.getSelectedFile());
+        filePath = vcfChooser.getSelectedFile().getPath();
+        System.out.println(filePath);
+        
+        populateDB(filePath);
+    }//GEN-LAST:event_vcfChooserActionPerformed
+
     /**
      * @param args the command line arguments
      */
+    
+    public void populateDB(String filePath){
+        savePrimaryKeys();
+        
+    }
+    
+    public void savePrimaryKeys(){
+        try{
+            //Establish connexion
+            Connection conn = DriverManager.getConnection(url);
+            
+            //Get all primary keys from database and save them in sets
+            try (Statement stmt = conn.createStatement()) {
+                String queryChromosomes = "SELECT chromosome_id FROM chromosomes;";
+                String queryVariants = "SELECT variant_id FROM variants;";
+                String queryObservedVar = "SELECT variant_id, chromosome_id FROM variants_observed";
+                
+                //Save chromosomes qurey reults in set
+                ResultSet resultChromosomes = stmt.executeQuery(queryChromosomes);
+                
+                while (resultChromosomes.next()) {
+                    setChromosomes.add(resultChromosomes.getString(1));
+                }
+                
+                //Save variants qurey reults in set
+                ResultSet resultVariants = stmt.executeQuery(queryVariants);
+                
+                while (resultChromosomes.next()) {
+                    setVariants.add(resultVariants.getString(1));
+                }
+                
+                //Save observed variants qurey reults in set
+                ResultSet resultObservedVar = stmt.executeQuery(queryObservedVar);
+                
+                while (resultObservedVar.next()) {
+                    setObservedVariants.add({resultObservedVar.getString(1), resultObservedVar.getString(2)});
+                }
+
+            }
+            catch(Exception ex){
+                System.out.println("Could not execute query to database.");
+            }
+            conn.close();
+        }
+        catch(Exception ex){
+            System.out.println("Could not connect to the database.");
+        }
+    }
+    
+    
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
@@ -73,13 +154,13 @@ public class DatabasePopulating extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(DatabaseParsing.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(DatabasePopulating.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(DatabaseParsing.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(DatabasePopulating.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(DatabaseParsing.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(DatabasePopulating.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(DatabaseParsing.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(DatabasePopulating.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
 
@@ -92,5 +173,7 @@ public class DatabasePopulating extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JFileChooser vcfChooser;
     // End of variables declaration//GEN-END:variables
 }
