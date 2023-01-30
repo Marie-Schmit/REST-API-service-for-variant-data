@@ -231,8 +231,9 @@ public class DatabasePopulating extends javax.swing.JFrame {
         //Insert values in table genomes
         //System.out.println(genome_id);
         insertGenomes(stmt, genome_id);
-        insertVariants(conn.createStatement(), variant_id, reference, alteration, position, chromosome);
-        insertInformation(stmt, info_format, info_value, extra_info);
+        int var_id = insertVariants(stmt, variant_id, reference, alteration, position, chromosome);
+        int info_id = insertInformation(stmt, info_format, info_value, extra_info);
+        insertVariantObserved(stmt, var_id, info_id, filter, quality, genome_id);
 
     }
 
@@ -250,7 +251,7 @@ public class DatabasePopulating extends javax.swing.JFrame {
         }
     }
 
-    private void insertVariants(Statement stmt, int variant_id, String reference, String alteration, int position, int chromosome) throws SQLException {
+    private int insertVariants(Statement stmt, int variant_id, String reference, String alteration, int position, int chromosome) throws SQLException {
         //If no variant id given in vcf file, create one
         /*
         if(variant_id == -1){
@@ -277,9 +278,10 @@ public class DatabasePopulating extends javax.swing.JFrame {
             //Add genome names and ids to the set
             setVariants.add(variant_id);
         }
+        return variant_id;
     }
 
-    private void insertInformation(Statement stmt, String info_format, String info_value, String extra_info) throws SQLException {
+    private int insertInformation(Statement stmt, String info_format, String info_value, String extra_info) throws SQLException {
         //Create sql query based on constant template
         String query = String.format(INFOS_TEMPLATE, info_format, info_value, extra_info);
         //Execute query
@@ -291,6 +293,20 @@ public class DatabasePopulating extends javax.swing.JFrame {
 
         //Add genome names and ids to the set
         setVariants.add(info_id);
+        
+        return info_id;
+    }
+    
+    private void insertVariantObserved(Statement stmt, int var_id, int info_id, String filter, int quality, int genome_id) throws SQLException {
+        Integer[] keys = new Integer[]{var_id, info_id};
+        if(!setObservedVariants.contains(keys)){
+            //Create sql query based on constant template
+            String query = String.format(VAR_OBSERVED_TEMPLATE, var_id, genome_id, quality, filter, info_id);
+            stmt.execute(query);
+            
+            //Add keys to set
+            setObservedVariants.add(keys);
+        }
     }
 
     public String[] variantType(String alt, String ref) {
