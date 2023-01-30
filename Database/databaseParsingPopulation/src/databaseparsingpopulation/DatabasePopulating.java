@@ -4,12 +4,14 @@
  */
 package databaseparsingpopulation;
 
+import java.io.FileReader;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashSet;
-import java.util.Set;
 
 /**
  *
@@ -25,15 +27,16 @@ public class DatabasePopulating extends javax.swing.JFrame {
     }
     
     //Database path
-    static final String url = "jdbc:sqlite:C:/Users/marie/Documents/Cranfield/DataIntegration_InteractionNetworks/Assignment/REST-API-service-for-variant-data/Database/variants_database.sqlite";
+    static final String database_file = "./Database/variants_database.sqlite";
     
     //File nqme
     public String filePath;
     
     //Set containing primary keys
-    static Set<String> setChromosomes = new HashSet<String>();
-    static Set<String> setVariants = new HashSet<String>();
-    static Set<String[]> setObservedVariants = new HashSet<String[]>();
+    static HashSet<String> setGenome = new HashSet<String>();
+    static HashSet<String> setVariants = new HashSet<String>();
+    static HashSet<String> setInformation = new HashSet<String>();
+    static HashSet<String[]> setObservedVariants = new HashSet<String[]>();
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -79,12 +82,20 @@ public class DatabasePopulating extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void vcfChooserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vcfChooserActionPerformed
-        // TODO add your handling code here:
-        System.out.println("Choosen file: " + vcfChooser.getSelectedFile());
-        filePath = vcfChooser.getSelectedFile().getPath();
-        System.out.println(filePath);
+        //File chosen is not null
+        if(vcfChooser.getSelectedFile() != null){
+            System.out.println("Choosen file: " + vcfChooser.getSelectedFile());
+            filePath = vcfChooser.getSelectedFile().getPath();
+            System.out.println(filePath);
         
-        populateDB(filePath);
+            //Close window
+            this.dispose();
+            //Populate database
+            populateDB(filePath);
+        }
+        else{
+            this.dispose();
+        }
     }//GEN-LAST:event_vcfChooserActionPerformed
 
     /**
@@ -98,26 +109,29 @@ public class DatabasePopulating extends javax.swing.JFrame {
     
     public void savePrimaryKeys(){
         try{
+            String url = String.format("jdbc:sqlite:%s", database_file);
+            
             //Establish connexion
             Connection conn = DriverManager.getConnection(url);
             
             //Get all primary keys from database and save them in sets
             try (Statement stmt = conn.createStatement()) {
-                String queryChromosomes = "SELECT chromosome_id FROM chromosomes;";
+                String queryGenome = "SELECT genome_id FROM genomes;";
                 String queryVariants = "SELECT variant_id FROM variants;";
                 String queryObservedVar = "SELECT variant_id, chromosome_id FROM variants_observed";
+                String queryInfo = "SELECT info_id FROM infos";
                 
                 //Save chromosomes qurey reults in set
-                ResultSet resultChromosomes = stmt.executeQuery(queryChromosomes);
+                ResultSet resultGenome = stmt.executeQuery(queryGenome);
                 
-                while (resultChromosomes.next()) {
-                    setChromosomes.add(resultChromosomes.getString(1));
+                while (resultGenome.next()) {
+                    setGenome.add(resultGenome.getString(1));
                 }
                 
-                //Save variants qurey reults in set
+                //Save variants query reults in set
                 ResultSet resultVariants = stmt.executeQuery(queryVariants);
                 
-                while (resultChromosomes.next()) {
+                while (resultVariants.next()) {
                     setVariants.add(resultVariants.getString(1));
                 }
                 
@@ -125,16 +139,29 @@ public class DatabasePopulating extends javax.swing.JFrame {
                 ResultSet resultObservedVar = stmt.executeQuery(queryObservedVar);
                 
                 while (resultObservedVar.next()) {
-                    setObservedVariants.add({resultObservedVar.getString(1), resultObservedVar.getString(2)});
+                    setObservedVariants.add(new String[] {resultObservedVar.getString(1), resultObservedVar.getString(2)});
+                }
+                
+                //Save information query reults in set
+                ResultSet resultInfo = stmt.executeQuery(queryInfo);
+                
+                while (resultInfo.next()) {
+                    setInformation.add(resultInfo.getString(1));
                 }
 
             }
             catch(Exception ex){
+                System.out.println(ex);
                 System.out.println("Could not execute query to database.");
             }
+            System.out.println(setGenome);
+            System.out.println(setVariants);
+            System.out.println(setObservedVariants);
+            System.out.println(setInformation);
             conn.close();
         }
         catch(Exception ex){
+            System.out.println(ex);
             System.out.println("Could not connect to the database.");
         }
     }
