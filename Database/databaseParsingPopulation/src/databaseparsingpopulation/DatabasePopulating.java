@@ -42,7 +42,7 @@ public class DatabasePopulating extends javax.swing.JFrame {
     
     //Queries templates
     static final String GENOME_TEMPLATE = "INSERT INTO genomes (genome_id, genome_name) VALUES (%d, \"%s\");";
-    static final String VARIANTS_TEMPLATE = "INSERT INTO variants (variant_id, var_type, var_subtype, reference, alteration, position, chromosome) VALUES (%d, \"%s\", \"%s\", \"%s\", \"%s\", %d, %d);";
+    static final String VARIANTS_TEMPLATE = "INSERT INTO variants (var_type, var_subtype, reference, alteration, position, chromosome) VALUES (\"%s\", \"%s\", \"%s\", \"%s\", %d, %d);";
     static final String INFOS_TEMPLATE = "INSERT INTO infos (info_id, info_format, info_values, extra_info) VALUES (%d, \"%s\", \"%s\", \"%s\");";
     static final String VAR_OBSERVED_TEMPLATE = "INSERT INTO variants_observed (variant_id, genome_id, quality, filter, info_id) VALUES (%d, %d, %d, \"%s\",%d);";
     
@@ -185,8 +185,10 @@ public class DatabasePopulating extends javax.swing.JFrame {
                     //Get genome name
                     if (inLine.startsWith("#CHROM")) {
                         String[] header = inLine.split("\t");
+                        System.out.println(header[0] + " " + header[1] + " "+ header[2] + " "+ header[3] + " "+ header[9]);
                         genome_id = Integer.parseInt(header[9]);
                     } else {
+                        System.out.println(inLine);
                         //Split the line
                         String[] variantLine = inLine.split("\t");
                         //Populate the database with the read line
@@ -199,6 +201,7 @@ public class DatabasePopulating extends javax.swing.JFrame {
             System.out.println("File not found " + filePath);
         } //Error while reading line or connecting to database
         catch (IOException | SQLException ex) {
+            System.out.println(ex);
             System.out.println("Connection to database failed.");
         }
     }
@@ -226,8 +229,12 @@ public class DatabasePopulating extends javax.swing.JFrame {
         String info_value = variantLine[9];
 
         //Insert values in table genomes
+        //System.out.println(genome_id);
         insertGenomes(stmt, genome_id);
-        insertVariants(stmt, variant_id, reference, alteration, position, chromosome);
+        insertVariants(conn.createStatement(), variant_id, reference, alteration, position, chromosome);
+        //insertInformation(stmt, info_format, info_value, extra_info);
+        
+        
     }
 
     private void insertGenomes(Statement stmt, int genome_id) throws SQLException {
@@ -246,24 +253,47 @@ public class DatabasePopulating extends javax.swing.JFrame {
     
     private void insertVariants(Statement stmt, int variant_id, String reference, String alteration, int position, int chromosome) throws SQLException {
         //If no variant id given in vcf file, create one
+        /*
         if(variant_id == -1){
             ResultSet rs = stmt.getGeneratedKeys(); //Generated key
-            int generated_id = rs.getInt(1);
-            System.out.println(generated_id);
-            variant_id = generated_id;
+            variant_id = rs.getInt(1);
+            System.out.println(variant_id);
         }
-        System.out.println(setVariants);
-        //Primary key genome_id is unique, but genome name is also unique (associated to the id)
+        */
+        //If unique id (primary key) does not already exist
         if(!setVariants.contains(variant_id)){
             //Determine variant type
             String type = variantType(alteration, reference)[0];
             String subtype = variantType(alteration, reference)[1];
             //Create sql query based on constant template
-            String query = String.format(VARIANTS_TEMPLATE, variant_id, type, subtype, reference, alteration, position, chromosome);
+            String query = String.format(VARIANTS_TEMPLATE, type, subtype, reference, alteration, position, chromosome);
+            //Execute query
+            stmt.execute(query);
+            
+            //Add identifier
+            ResultSet rs = stmt.getGeneratedKeys(); //Generated key
+            variant_id = rs.getInt(1);
+            stmt.execute("INSERT INTO variants(variant_id) VALUES (" + variant_id + ");");
+            System.out.println("variant id: " + variant_id);
+            //Add genome names and ids to the set
+            setVariants.add(variant_id);
+        }
+    }
+    
+    private void insertInformation(Statement stmt, String info_format, String info_value, String extra_info) throws SQLException {
+        //Generate primary key
+        //ResultSet rs = stmt.getGeneratedKeys(); //Generated key
+        //int info_id = rs.getInt(1);
+        int info_id = 1;
+        
+        //If unique id (primary key) does not already exist
+        if(!setVariants.contains(info_id)){
+            //Create sql query based on constant template
+            String query = String.format(INFOS_TEMPLATE, info_id, info_format, info_value, extra_info);
             //Execute query
             stmt.execute(query);
             //Add genome names and ids to the set
-            setVariants.add(variant_id);
+            setVariants.add(info_id);
         }
     }
     
