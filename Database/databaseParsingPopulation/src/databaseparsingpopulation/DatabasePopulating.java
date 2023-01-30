@@ -27,19 +27,25 @@ public class DatabasePopulating extends javax.swing.JFrame {
     public DatabasePopulating() {
         initComponents();
     }
-    
+
     //Database path
     static final String database_file = "C:/Users/marie/Documents/Cranfield/DataIntegration_InteractionNetworks/Assignment/REST-API-service-for-variant-data/Database/variants_database.sqlite";
-    
-    //File nqme
-    public String filePath;
-    
-    //Set containing primary keys
-    static HashSet<String> setGenome = new HashSet<String>();
-    static HashSet<String> setVariants = new HashSet<String>();
-    static HashSet<String> setInformation = new HashSet<String>();
-    static HashSet<String[]> setObservedVariants = new HashSet<String[]>();
 
+    //File name
+    public String filePath;
+
+    //Set containing primary keys
+    static HashSet<Integer> setGenome = new HashSet<Integer>();
+    static HashSet<Integer> setVariants = new HashSet<Integer>();
+    static HashSet<Integer> setInformation = new HashSet<Integer>();
+    static HashSet<Integer[]> setObservedVariants = new HashSet<Integer[]>();
+    
+    //Queries templates
+    static final String GENOME_TEMPLATE = "INSERT INTO genomes (genome_id, genome_name) VALUES (%d, \"%s\");";
+    static final String VARIANTS_TEMPLATE = "INSERT INTO variants (variant_id, var_type, var_subtype, reference, alteration, position, chromosome) VALUES (%d, \"%s\", \"%s\", \"%s\", \"%s\", %d, %d);";
+    static final String INFOS_TEMPLATE = "INSERT INTO infos (info_id, info_format, info_values, extra_info) VALUES (%d, \"%s\", \"%s\", \"%s\");";
+    static final String VAR_OBSERVED_TEMPLATE = "INSERT INTO variants_observed (variant_id, genome_id, quality, filter, info_id) VALUES (%d, %d, %d, \"%s\",%d);";
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -85,16 +91,15 @@ public class DatabasePopulating extends javax.swing.JFrame {
 
     private void vcfChooserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vcfChooserActionPerformed
         //File chosen is not null
-        if(vcfChooser.getSelectedFile() != null){
+        if (vcfChooser.getSelectedFile() != null) {
             System.out.println("Choosen file: " + vcfChooser.getSelectedFile());
             filePath = vcfChooser.getSelectedFile().getPath();
-        
+
             //Close window
             this.dispose();
             //Populate database
             populateDB();
-        }
-        else{
+        } else {
             this.dispose();
         }
     }//GEN-LAST:event_vcfChooserActionPerformed
@@ -102,111 +107,177 @@ public class DatabasePopulating extends javax.swing.JFrame {
     /**
      * @param args the command line arguments
      */
-    
-    public void populateDB(){
-        savePrimaryKeys();  
+    private void populateDB() {
+        savePrimaryKeys();
         vcfParser();
     }
-    
-    public void savePrimaryKeys(){
-        try{
+
+    private void savePrimaryKeys() {
+        try {
             String url = String.format("jdbc:sqlite:%s", database_file);
-            
+
             //Establish connexion
             Connection conn = DriverManager.getConnection(url);
-            
+
             //Get all primary keys from database and save them in sets
             try (Statement stmt = conn.createStatement()) {
                 String queryGenome = "SELECT genome_id FROM genomes;";
                 String queryVariants = "SELECT variant_id FROM variants;";
                 String queryObservedVar = "SELECT variant_id, genome_id FROM variants_observed";
                 String queryInfo = "SELECT info_id FROM infos";
-                
+
                 //Save chromosomes qurey reults in set
                 ResultSet resultGenome = stmt.executeQuery(queryGenome);
-                
+
                 while (resultGenome.next()) {
-                    setGenome.add(resultGenome.getString(1));
-                }
-                
-                //Save variants query reults in set
-                ResultSet resultVariants = stmt.executeQuery(queryVariants);
-                
-                while (resultVariants.next()) {
-                    setVariants.add(resultVariants.getString(1));
-                }
-                
-                //Save observed variants qurey reults in set
-                ResultSet resultObservedVar = stmt.executeQuery(queryObservedVar);
-                
-                while (resultObservedVar.next()) {
-                    setObservedVariants.add(new String[] {resultObservedVar.getString(1), resultObservedVar.getString(2)});
-                }
-                
-                //Save information query reults in set
-                ResultSet resultInfo = stmt.executeQuery(queryInfo);
-                
-                while (resultInfo.next()) {
-                    setInformation.add(resultInfo.getString(1));
+                    setGenome.add(Integer.parseInt(resultGenome.getString(1)));
                 }
 
-            }
-            catch(Exception ex){
+                //Save variants query reults in set
+                ResultSet resultVariants = stmt.executeQuery(queryVariants);
+
+                while (resultVariants.next()) {
+                    setVariants.add(Integer.parseInt(resultVariants.getString(1)));
+                }
+
+                //Save observed variants qurey reults in set
+                ResultSet resultObservedVar = stmt.executeQuery(queryObservedVar);
+
+                while (resultObservedVar.next()) {
+                    setObservedVariants.add(new Integer[]{Integer.parseInt(resultObservedVar.getString(1)), Integer.parseInt(resultObservedVar.getString(2))});
+                }
+
+                //Save information query reults in set
+                ResultSet resultInfo = stmt.executeQuery(queryInfo);
+
+                while (resultInfo.next()) {
+                    setInformation.add(Integer.parseInt(resultInfo.getString(1)));
+                }
+
+            } catch (Exception ex) {
                 System.out.println(ex);
                 System.out.println("Could not execute query to database.");
             }
-            System.out.println(setGenome);
-            System.out.println(setVariants);
-            System.out.println(setObservedVariants);
-            System.out.println(setInformation);
             conn.close();
-        }
-        catch(Exception ex){
+        } catch (Exception ex) {
             System.out.println(ex);
             System.out.println("Could not connect to the database.");
         }
     }
-    
-    
+
     //Retrieve information from vcf file, and parse
-    public void vcfParser(){
+    private void vcfParser() {
         BufferedReader buffer = null; //Read the text with a BufferedReader
         String inLine; //A line read from the file
-                
-        try{
+        int genome_id = 0; //Genome id for unknown genomes
+
+        try {
             //Create buffered stream
             buffer = new BufferedReader(new FileReader(filePath));
             //Establish connexion
             String url = String.format("jdbc:sqlite:%s", database_file);
             Connection conn = DriverManager.getConnection(url);
-            
+
             //Read a line and import it to the database
-            while((inLine = buffer.readLine()) != null){
+            while ((inLine = buffer.readLine()) != null) {
                 //Line is not a header
-                if(!inLine.startsWith("#")){
-                    //Split the line
-                    String[] variantLine = inLine.split("\t");
-                    //Populate the database with the read line
-                    populateRowDB(variantLine, conn);
+                if (!inLine.startsWith("##")) {
+                    //Get genome name
+                    if (inLine.startsWith("#CHROM")) {
+                        String[] header = inLine.split("\t");
+                        genome_id = Integer.parseInt(header[9]);
+                    } else {
+                        //Split the line
+                        String[] variantLine = inLine.split("\t");
+                        //Populate the database with the read line
+                        populateRowDB(variantLine, conn, genome_id);
+                    }
                 }
             }
-        }
-        //File not found
-        catch(FileNotFoundException ex){
+        } //File not found
+        catch (FileNotFoundException ex) {
             System.out.println("File not found " + filePath);
-        }
-        //Error while reading line or connecting to database
-        catch(IOException | SQLException ex){
+        } //Error while reading line or connecting to database
+        catch (IOException | SQLException ex) {
             System.out.println("Connection to database failed.");
         }
     }
-    
+
     //Populate the database with each line of the file
-    public void populateRowDB(String[] variantLine, Connection conn) throws SQLException{
-        
+    private void populateRowDB(String[] variantLine, Connection conn, int genome_id) throws SQLException {
+        Statement stmt = conn.createStatement();
+
+        //Elements to save in databases
+        int chromosome = Integer.parseInt(variantLine[0]);
+        int position = Integer.parseInt(variantLine[1]);
+        int variant_id = -1;
+
+        //If id exists
+        if (!variantLine[2].equals(".")) {
+            variant_id = Integer.parseInt(variantLine[2]);
+        }
+
+        String reference = variantLine[3];
+        String alteration = variantLine[4];
+        int quality = Integer.parseInt(variantLine[5]);
+        String filter = variantLine[6];
+        String extra_info = variantLine[7];
+        String info_format = variantLine[8];
+        String info_value = variantLine[9];
+
+        //Insert values in table genomes
+        insertGenomes(stmt, genome_id);
+        insertVariants(stmt, variant_id, reference, alteration, position, chromosome);
+    }
+
+    private void insertGenomes(Statement stmt, int genome_id) throws SQLException {
+        //Primary key genome_id is unique, but genome name is also unique (associated to the id)
+        if(!setGenome.contains(genome_id)){
+            //Create genome name
+            String genome_name = new String("genome_" + genome_id);
+            //Create sql query based on constant template
+            String query = String.format(GENOME_TEMPLATE, genome_id, genome_name);
+            //Execute query
+            stmt.execute(query);
+            //Add genome names and ids to the set
+            setGenome.add(genome_id);
+        }
     }
     
+    private void insertVariants(Statement stmt, int variant_id, String reference, String alteration, int position, int chromosome) throws SQLException {
+        //If no variant id given in vcf file, create one
+        if(variant_id == -1){
+            ResultSet rs = stmt.getGeneratedKeys(); //Generated key
+            int generated_id = rs.getInt(1);
+            System.out.println(generated_id);
+            variant_id = generated_id;
+        }
+        System.out.println(setVariants);
+        //Primary key genome_id is unique, but genome name is also unique (associated to the id)
+        if(!setVariants.contains(variant_id)){
+            //Determine variant type
+            String type = variantType(alteration, reference)[0];
+            String subtype = variantType(alteration, reference)[1];
+            //Create sql query based on constant template
+            String query = String.format(VARIANTS_TEMPLATE, variant_id, type, subtype, reference, alteration, position, chromosome);
+            //Execute query
+            stmt.execute(query);
+            //Add genome names and ids to the set
+            setVariants.add(variant_id);
+        }
+    }
     
+    public String[] variantType(String alt, String ref){
+        if(ref.length() == alt.length()) //Same length: SNP
+            return(new String[]{"SNP", ""});
+        else if(ref.length() > alt.length())
+            return(new String[]{"InDel", "Deletion"});
+        else if(ref.length() < alt.length())
+            return(new String[]{"InDel", "Insertion"});
+        else
+            return(new String[]{"", ""});
+    }
+
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">

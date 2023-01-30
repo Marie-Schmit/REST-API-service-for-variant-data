@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS variants_observed(
 CREATE TABLE IF NOT EXISTS variants(
 	variant_id INT,
 	var_type TEXT,
+	var_subtype TEXT,
 	reference TEXT,
 	alteration TEXT,
 	position INT,
@@ -33,19 +34,8 @@ CREATE TABLE IF NOT EXISTS variants(
 
 CREATE TABLE IF NOT EXISTS infos(
 	info_id INT,
+	extra_info TEXT,
 	info_format TEXT,
 	info_values TEXT,
 	PRIMARY KEY (info_id)
 );
-
-INSERT INTO genomes (genome_id, genome_name)
-VALUES(1, 7208);
-
-INSERT INTO variants(variant_id, var_type, reference, alteration, position, chromosome)
-VALUES(1, "InDel", "T", "TA", 6324, 1);
-
-INSERT INTO infos(info_id, info_format, info_values)
-VALUES(1, "GT:GQ:DP", "1|1:40:12");
-
-INSERT INTO variants_observed(variant_id, genome_id, quality, filter, info_id)
-VALUES(1, 1, 40, "PASS", 1);
