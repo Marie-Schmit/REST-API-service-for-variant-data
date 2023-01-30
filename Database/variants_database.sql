@@ -14,7 +14,11 @@ CREATE TABLE IF NOT EXISTS variants_observed(
 	info_id INT,
 	PRIMARY KEY (variant_id, genome_id),
 	FOREIGN KEY (genome_id)
-		REFERENCES genomes (genome_id)
+		REFERENCES genomes (genome_id),
+	FOREIGN KEY (info_id)
+		REFERENCES infos(info_id),
+	FOREIGN KEY (variant_id)
+		REFERENCES variants(variant_id)
 );
 
 CREATE TABLE IF NOT EXISTS variants(
@@ -23,10 +27,8 @@ CREATE TABLE IF NOT EXISTS variants(
 	reference TEXT,
 	alteration TEXT,
 	position INT,
-	chomosome INT,
+	chromosome INT,
 	PRIMARY KEY (variant_id)
-	FOREIGN KEY (variant_id)
-		REFERENCES variants_observed(variant_id)
 );
 
 CREATE TABLE IF NOT EXISTS infos(
@@ -34,9 +36,16 @@ CREATE TABLE IF NOT EXISTS infos(
 	info_format TEXT,
 	info_values TEXT,
 	PRIMARY KEY (info_id)
-	FOREIGN KEY (info_id)
-		REFERENCES variants_observed(variant_id)
 );
 
 INSERT INTO genomes (genome_id, genome_name)
 VALUES(1, 7208);
+
+INSERT INTO variants(variant_id, var_type, reference, alteration, position, chromosome)
+VALUES(1, "InDel", "T", "TA", 6324, 1);
+
+INSERT INTO infos(info_id, info_format, info_values)
+VALUES(1, "GT:GQ:DP", "1|1:40:12");
+
+INSERT INTO variants_observed(variant_id, genome_id, quality, filter, info_id)
+VALUES(1, 1, 40, "PASS", 1);

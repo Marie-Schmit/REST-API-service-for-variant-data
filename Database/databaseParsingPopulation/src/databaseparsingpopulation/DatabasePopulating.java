@@ -4,6 +4,8 @@
  */
 package databaseparsingpopulation;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Connection;
@@ -27,7 +29,7 @@ public class DatabasePopulating extends javax.swing.JFrame {
     }
     
     //Database path
-    static final String database_file = "./Database/variants_database.sqlite";
+    static final String database_file = "C:/Users/marie/Documents/Cranfield/DataIntegration_InteractionNetworks/Assignment/REST-API-service-for-variant-data/Database/variants_database.sqlite";
     
     //File nqme
     public String filePath;
@@ -86,12 +88,11 @@ public class DatabasePopulating extends javax.swing.JFrame {
         if(vcfChooser.getSelectedFile() != null){
             System.out.println("Choosen file: " + vcfChooser.getSelectedFile());
             filePath = vcfChooser.getSelectedFile().getPath();
-            System.out.println(filePath);
         
             //Close window
             this.dispose();
             //Populate database
-            populateDB(filePath);
+            populateDB();
         }
         else{
             this.dispose();
@@ -102,9 +103,9 @@ public class DatabasePopulating extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     
-    public void populateDB(String filePath){
-        savePrimaryKeys();
-        
+    public void populateDB(){
+        savePrimaryKeys();  
+        vcfParser();
     }
     
     public void savePrimaryKeys(){
@@ -118,7 +119,7 @@ public class DatabasePopulating extends javax.swing.JFrame {
             try (Statement stmt = conn.createStatement()) {
                 String queryGenome = "SELECT genome_id FROM genomes;";
                 String queryVariants = "SELECT variant_id FROM variants;";
-                String queryObservedVar = "SELECT variant_id, chromosome_id FROM variants_observed";
+                String queryObservedVar = "SELECT variant_id, genome_id FROM variants_observed";
                 String queryInfo = "SELECT info_id FROM infos";
                 
                 //Save chromosomes qurey reults in set
@@ -164,6 +165,45 @@ public class DatabasePopulating extends javax.swing.JFrame {
             System.out.println(ex);
             System.out.println("Could not connect to the database.");
         }
+    }
+    
+    
+    //Retrieve information from vcf file, and parse
+    public void vcfParser(){
+        BufferedReader buffer = null; //Read the text with a BufferedReader
+        String inLine; //A line read from the file
+                
+        try{
+            //Create buffered stream
+            buffer = new BufferedReader(new FileReader(filePath));
+            //Establish connexion
+            String url = String.format("jdbc:sqlite:%s", database_file);
+            Connection conn = DriverManager.getConnection(url);
+            
+            //Read a line and import it to the database
+            while((inLine = buffer.readLine()) != null){
+                //Line is not a header
+                if(!inLine.startsWith("#")){
+                    //Split the line
+                    String[] variantLine = inLine.split("\t");
+                    //Populate the database with the read line
+                    populateRowDB(variantLine, conn);
+                }
+            }
+        }
+        //File not found
+        catch(FileNotFoundException ex){
+            System.out.println("File not found " + filePath);
+        }
+        //Error while reading line or connecting to database
+        catch(IOException | SQLException ex){
+            System.out.println("Connection to database failed.");
+        }
+    }
+    
+    //Populate the database with each line of the file
+    public void populateRowDB(String[] variantLine, Connection conn) throws SQLException{
+        
     }
     
     
