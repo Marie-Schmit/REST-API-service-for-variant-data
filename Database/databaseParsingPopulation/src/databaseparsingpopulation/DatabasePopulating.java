@@ -39,13 +39,13 @@ public class DatabasePopulating extends javax.swing.JFrame {
     static HashSet<Integer> setVariants = new HashSet<Integer>();
     static HashSet<Integer> setInformation = new HashSet<Integer>();
     static HashSet<Integer[]> setObservedVariants = new HashSet<Integer[]>();
-    
+
     //Queries templates
     static final String GENOME_TEMPLATE = "INSERT INTO genomes (genome_id, genome_name) VALUES (%d, \"%s\");";
     static final String VARIANTS_TEMPLATE = "INSERT INTO variants (var_type, var_subtype, reference, alteration, position, chromosome) VALUES (\"%s\", \"%s\", \"%s\", \"%s\", %d, %d);";
-    static final String INFOS_TEMPLATE = "INSERT INTO infos (info_id, info_format, info_values, extra_info) VALUES (%d, \"%s\", \"%s\", \"%s\");";
+    static final String INFOS_TEMPLATE = "INSERT INTO infos (info_format, info_values, extra_info) VALUES (\"%s\", \"%s\", \"%s\");";
     static final String VAR_OBSERVED_TEMPLATE = "INSERT INTO variants_observed (variant_id, genome_id, quality, filter, info_id) VALUES (%d, %d, %d, \"%s\",%d);";
-    
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -185,7 +185,7 @@ public class DatabasePopulating extends javax.swing.JFrame {
                     //Get genome name
                     if (inLine.startsWith("#CHROM")) {
                         String[] header = inLine.split("\t");
-                        System.out.println(header[0] + " " + header[1] + " "+ header[2] + " "+ header[3] + " "+ header[9]);
+                        System.out.println(header[0] + " " + header[1] + " " + header[2] + " " + header[3] + " " + header[9]);
                         genome_id = Integer.parseInt(header[9]);
                     } else {
                         System.out.println(inLine);
@@ -232,14 +232,13 @@ public class DatabasePopulating extends javax.swing.JFrame {
         //System.out.println(genome_id);
         insertGenomes(stmt, genome_id);
         insertVariants(conn.createStatement(), variant_id, reference, alteration, position, chromosome);
-        //insertInformation(stmt, info_format, info_value, extra_info);
-        
-        
+        insertInformation(stmt, info_format, info_value, extra_info);
+
     }
 
     private void insertGenomes(Statement stmt, int genome_id) throws SQLException {
         //Primary key genome_id is unique, but genome name is also unique (associated to the id)
-        if(!setGenome.contains(genome_id)){
+        if (!setGenome.contains(genome_id)) {
             //Create genome name
             String genome_name = new String("genome_" + genome_id);
             //Create sql query based on constant template
@@ -250,7 +249,7 @@ public class DatabasePopulating extends javax.swing.JFrame {
             setGenome.add(genome_id);
         }
     }
-    
+
     private void insertVariants(Statement stmt, int variant_id, String reference, String alteration, int position, int chromosome) throws SQLException {
         //If no variant id given in vcf file, create one
         /*
@@ -259,9 +258,9 @@ public class DatabasePopulating extends javax.swing.JFrame {
             variant_id = rs.getInt(1);
             System.out.println(variant_id);
         }
-        */
+         */
         //If unique id (primary key) does not already exist
-        if(!setVariants.contains(variant_id)){
+        if (!setVariants.contains(variant_id)) {
             //Determine variant type
             String type = variantType(alteration, reference)[0];
             String subtype = variantType(alteration, reference)[1];
@@ -269,43 +268,42 @@ public class DatabasePopulating extends javax.swing.JFrame {
             String query = String.format(VARIANTS_TEMPLATE, type, subtype, reference, alteration, position, chromosome);
             //Execute query
             stmt.execute(query);
-            
+
             //Add identifier
             ResultSet rs = stmt.getGeneratedKeys(); //Generated key
             variant_id = rs.getInt(1);
             System.out.println("variant id: " + variant_id);
-            
+
             //Add genome names and ids to the set
             setVariants.add(variant_id);
         }
     }
-    
+
     private void insertInformation(Statement stmt, String info_format, String info_value, String extra_info) throws SQLException {
-        //Generate primary key
-        //ResultSet rs = stmt.getGeneratedKeys(); //Generated key
-        //int info_id = rs.getInt(1);
-        int info_id = 1;
-        
-        //If unique id (primary key) does not already exist
-        if(!setVariants.contains(info_id)){
-            //Create sql query based on constant template
-            String query = String.format(INFOS_TEMPLATE, info_id, info_format, info_value, extra_info);
-            //Execute query
-            stmt.execute(query);
-            //Add genome names and ids to the set
-            setVariants.add(info_id);
-        }
+        //Create sql query based on constant template
+        String query = String.format(INFOS_TEMPLATE, info_format, info_value, extra_info);
+        //Execute query
+        stmt.execute(query);
+        //Add identifier
+        ResultSet rs = stmt.getGeneratedKeys(); //Generated key
+        int info_id = rs.getInt(1);
+        System.out.println("Information id: " + info_id);
+
+        //Add genome names and ids to the set
+        setVariants.add(info_id);
     }
-    
-    public String[] variantType(String alt, String ref){
-        if(ref.length() == alt.length()) //Same length: SNP
-            return(new String[]{"SNP", ""});
-        else if(ref.length() > alt.length())
-            return(new String[]{"InDel", "Deletion"});
-        else if(ref.length() < alt.length())
-            return(new String[]{"InDel", "Insertion"});
-        else
-            return(new String[]{"", ""});
+
+    public String[] variantType(String alt, String ref) {
+        if (ref.length() == alt.length()) //Same length: SNP
+        {
+            return (new String[]{"SNP", ""});
+        } else if (ref.length() > alt.length()) {
+            return (new String[]{"InDel", "Deletion"});
+        } else if (ref.length() < alt.length()) {
+            return (new String[]{"InDel", "Insertion"});
+        } else {
+            return (new String[]{"", ""});
+        }
     }
 
     public static void main(String args[]) {
