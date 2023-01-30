@@ -273,8 +273,8 @@ public class DatabasePopulating extends javax.swing.JFrame {
             //Add identifier
             ResultSet rs = stmt.getGeneratedKeys(); //Generated key
             variant_id = rs.getInt(1);
-            stmt.execute("INSERT INTO variants(variant_id) VALUES (" + variant_id + ");");
             System.out.println("variant id: " + variant_id);
+            
             //Add genome names and ids to the set
             setVariants.add(variant_id);
         }
