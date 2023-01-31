@@ -202,36 +202,70 @@ variant_router.get('/variants/density/:genome/:chromosome/:windowSize/:type?/:su
             if (err) {
                 throw err;
             }
-            variantDensity(Number(rows[0].maxPos), Number(req.params.windowSize), req.params.genome, req.params.chromosome);
+            variantDensity(Number(rows[0].maxPos), parameters, req.params.windowSize, res);
         });
     }
 });
 
-function variantDensity(maxPosition, windowSize, genome, chromosome){
+function variantDensity(maxPosition, parameters, windowSize, res) {
     //Store maximal number of windows
-    maxWindows = Math.floor(Number(maxPosition) / Number(windowSize)); //Results sent as JSON objects
-    console.log(maxWindows);
+    maxWindows = Math.ceil(Number(maxPosition) / Number(windowSize)); //Results sent as JSON objects
+    
+
+    console.log("Win size: " + windowSize);
+    console.log("Max position: " + maxPosition);
+    console.log("Max window: " + maxWindows);
 
     var i;
-        //Initialise start and end positions
-        var startPosition = 0;
-        var endPosition = windowSize;
-        var variantDensity;
-        for (i = 0; i < maxWindows; i++) {
-            //For the current window, calculate array density
+    //Initialise start and end positions
+    var startPosition = 0;
+    var endPosition = windowSize;
+    //Array containing variant density
+    const variantDensity = [];
+    for (i = 0; i <= maxWindows; i++) {
+        //For the current window, calculate array density
+        calculateDensity(maxPosition, parameters, startPosition, endPosition, variantDensity);
+        console.log(variantDensity);
 
+        startPosition += windowSize;
+        endPosition += windowSize;
+    }
+}
 
-            startPosition += windowSize;
-            endPosition += windowSize;
+function calculateDensity(maxPosition, parameters, startPosition, endPosition, density) {
+    const startQuery = 'SELECT COUNT(variants.variant_id) AS density FROM variants ' +
+        'JOIN variants_observed ON variants_observed.variant_id = variants.variant_id ' +
+        'JOIN genomes ON variants_observed.genome_id = genomes.genome_id ' +
+        'WHERE genomes.genome_id = ? AND variants.chromosome = ?';
+   
+    const endQuery = ' AND variants.position > ? AND variants.position <= ?;';
+
+    //Add start and end position of the window to parameters
+    parameters.push(startPosition);
+    parameters.push(endPosition);
+
+    if (parameters.length > 4) { //Condition on type
+        var query = startQuery + ' AND variants.var_type = ?' + endQuery;
+        console.log(query);
+
+        if (parameters.length > 5) //Condition on subtype{
+            var query = startQuery + ' AND variants.var_type = ? AND variants.var_subtype = ?' + endQuery;
+            console.log(query);
+    }
+    else {
+        var query = startQuery + endQuery;
+        console.log(query);
+    }
+
+    //Make request to database to get the number of variants for the current window
+    db.all(query, parameters, function (err, rows) {
+        if (err) {
+            throw err;
         }
-}
+        console.log(rows);
+        density.push(rows[0].density);
+        console.log(density);
+    });
 
-function calculateDensity(maxPosition, windowSize, genome, chromosome){
-    const parameters = [
-        req.params.genome,
-        req.params.chromosome,
-                    req.params.type
-    ];
-
-    return variantDensity;
-}
+    return density;
+}      
