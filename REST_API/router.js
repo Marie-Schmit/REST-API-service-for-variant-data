@@ -196,14 +196,14 @@ variant_router.get('/variants/density/:genome/:chromosome/:windowSize/:type?/:su
             if (err) {
                 throw err;
             }
-            variantDensity(Number(rows[0].maxPos), parameters, req.params.windowSize, res);
+            variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize), res);
         });
     }
 });
 
 function variantDensity(maxPosition, parameters, windowSize, res) {
     //Store maximal number of windows
-    maxWindows = Math.ceil(Number(maxPosition) / Number(windowSize)); //Results sent as JSON objects
+    maxWindows = Math.ceil(maxPosition / windowSize); //Results sent as JSON objects
     
 
     console.log("Win size: " + windowSize);
@@ -217,15 +217,17 @@ function variantDensity(maxPosition, parameters, windowSize, res) {
     //Array containing variant density
     const variantDensity = [];
     for (i = 0; i <= maxWindows; i++) {
-        //For the current window, calculate array density
-        calculateDensity(maxPosition, parameters, startPosition, endPosition);
+        console.log("\n STatr: " + startPosition);
+        console.log("End: " + endPosition);
+        //For the current window, calculate value of density and add it to array
+        variantDensity.push(calculateDensity(maxPosition, parameters, startPosition, endPosition));
 
         startPosition += windowSize;
         endPosition += windowSize;
     }
 }
 
-function calculateDensity(maxPosition, parameters, startPosition, endPosition) {
+async function calculateDensity(maxPosition, parameters, startPosition, endPosition) {
     const startQuery = 'SELECT COUNT(variants.variant_id) AS density FROM variants ' +
         'JOIN variants_observed ON variants_observed.variant_id = variants.variant_id ' +
         'JOIN genomes ON variants_observed.genome_id = genomes.genome_id ' +
@@ -234,13 +236,23 @@ function calculateDensity(maxPosition, parameters, startPosition, endPosition) {
     const endQuery = ' AND variants.position > ? AND variants.position <= ?;';
 
     //Add start and end position of the window to parameters
-    parameters.push(startPosition);
-    parameters.push(endPosition);
+    var newParam = [];
+    var j;
+    //Parameters need to be copied in a new instance. Otherwise, the array will be modified at each loop.
+    for (j = 0; j < parameters.length; j++){
+        newParam.push(parameters[j]);
+    }
 
-    if (parameters.length > 4) { //Condition on type
+    newParam.push(startPosition);
+    newParam.push(endPosition);
+
+    console.log(parameters);
+    console.log("\n newParam: " + newParam);
+
+    if (newParam.length > 4) { //Condition on type
         var query = startQuery + ' AND variants.var_type = ?' + endQuery;
 
-        if (parameters.length > 5) //Condition on subtype{
+        if (newParam.length > 5) //Condition on subtype{
             var query = startQuery + ' AND variants.var_type = ? AND variants.var_subtype = ?' + endQuery;
     }
     else {
@@ -248,26 +260,17 @@ function calculateDensity(maxPosition, parameters, startPosition, endPosition) {
     }
 
     //Make request to database to get the number of variants for the current window
-    var variantDensity = function(){
-        return new Promise(function(resolve, reject){
-            var responseObject;
+    var variantDensity = await getCounts(db, query, newParam);
 
-            db.all(query, parameters, function (err, rows) {
-                if (err) {
-                    throw err;
-                    reject(responseObject);
-                }
-                
-                else{
-                    responseObject = {
-                        statement: this,
-                        rows: rows
-                    };
-                    resolve(responseObject);
-                }
-            });
+    console.log(variantDensity);
+    return(variantDensity);
+}   
+
+async function getCounts(db, query, newParam){
+    return new Promise(function(resolve, reject){
+        db.get(query, newParam, function(err, row){
+            if (err) reject(err);
+            resolve(row);
         });
-    }
-
-    console.log(responseObject);
-}      
+    });
+}
