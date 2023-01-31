@@ -12,6 +12,7 @@ const db = new sqlite3.Database("../Database/variants_database.sqlite")
 
 //Import r-script package
 const rscript = require('r-script-with-bug-fixes');
+const { result } = require('underscore');
 
 
 variant_router.use(function (req, res, next) { //Middleware with no specific route. TRiggered every time a request is recieved
@@ -197,14 +198,47 @@ variant_router.get('/variants/density/:genome/:chromosome/:windowSize/:type?/:su
                 throw err;
             }
             //Get array of variant density accross every chosen windows
-            var varDensity = variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize));
+            //var varDensity = variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize));
             //Save result in a json and display
-            res.json(varDensity);
+            Promise.all([ variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize))]).then(function([varDensity]){
+                //Json creation 
+                var resultDensity = {
+                };
+
+                resultDensity.Genome = parameters[0];
+                resultDensity.Chromosome = parameters[1];
+                if(parameters.length > 2){
+                    resultDensity.Type = parameters[2];
+                    if(parameters.length > 3){
+                        resultDensity.Subtype = parameters[3];
+                    }
+                }
+
+                //Show window size
+                resultDensity.WindowSize = req.params.windowSize;
+                //Array containing a list of windows and their density
+                resultDensity.Window = [];
+
+                for(var i = 0; i < varDensity.length; i++){
+                    //Number of window
+                    var windowDens = {
+                    };
+
+                    windowDens.StartPosition = i*req.params.windowSize;
+                    windowDens.EndPosition = (1+i)*req.params.windowSize;
+                    windowDens.Density = varDensity[i];
+
+                    resultDensity.Window.push(windowDens);
+                }
+
+
+                res.json(resultDensity);
+            })
         });
     }
 });
 
-function variantDensity(maxPosition, parameters, windowSize) {
+async function variantDensity(maxPosition, parameters, windowSize) {
     //Store maximal number of windows
     maxWindows = Math.ceil(maxPosition / windowSize); //Results sent as JSON objects
     
@@ -225,10 +259,8 @@ function variantDensity(maxPosition, parameters, windowSize) {
         //For the current window, calculate value of density and add it to array
         //variantDensity.push(calculateDensity(maxPosition, parameters, startPosition, endPosition));
 
-        promise = Promise.all([calculateDensity(maxPosition, parameters, startPosition, endPosition)]).then(function(density){
-                    console.log("promise: " + density);
-                    variantDensity.push(density);
-                }); //Get value of promise function (async)
+        promise = await(calculateDensity(maxPosition, parameters, startPosition, endPosition));
+        variantDensity.push(promise);//Get value of promise function (async)
 
         startPosition += windowSize;
         endPosition += windowSize;
