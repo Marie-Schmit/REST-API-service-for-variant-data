@@ -196,12 +196,15 @@ variant_router.get('/variants/density/:genome/:chromosome/:windowSize/:type?/:su
             if (err) {
                 throw err;
             }
-            variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize), res);
+            //Get array of variant density accross every chosen windows
+            var varDensity = variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize));
+            //Save result in a json and display
+            res.json(varDensity);
         });
     }
 });
 
-function variantDensity(maxPosition, parameters, windowSize, res) {
+function variantDensity(maxPosition, parameters, windowSize) {
     //Store maximal number of windows
     maxWindows = Math.ceil(maxPosition / windowSize); //Results sent as JSON objects
     
@@ -217,14 +220,23 @@ function variantDensity(maxPosition, parameters, windowSize, res) {
     //Array containing variant density
     const variantDensity = [];
     for (i = 0; i <= maxWindows; i++) {
-        console.log("\n STatr: " + startPosition);
+        console.log("\n\n Start: " + startPosition);
         console.log("End: " + endPosition);
         //For the current window, calculate value of density and add it to array
-        variantDensity.push(calculateDensity(maxPosition, parameters, startPosition, endPosition));
+        //variantDensity.push(calculateDensity(maxPosition, parameters, startPosition, endPosition));
+
+        promise = Promise.all([calculateDensity(maxPosition, parameters, startPosition, endPosition)]).then(function(density){
+                    console.log("promise: " + density);
+                    variantDensity.push(density);
+                }); //Get value of promise function (async)
 
         startPosition += windowSize;
         endPosition += windowSize;
     }
+
+    console.log("var density final: " + variantDensity);
+    //Return array of variant density
+    return(variantDensity);
 }
 
 async function calculateDensity(maxPosition, parameters, startPosition, endPosition) {
@@ -246,9 +258,6 @@ async function calculateDensity(maxPosition, parameters, startPosition, endPosit
     newParam.push(startPosition);
     newParam.push(endPosition);
 
-    console.log(parameters);
-    console.log("\n newParam: " + newParam);
-
     if (newParam.length > 4) { //Condition on type
         var query = startQuery + ' AND variants.var_type = ?' + endQuery;
 
@@ -259,13 +268,18 @@ async function calculateDensity(maxPosition, parameters, startPosition, endPosit
         var query = startQuery + endQuery;
     }
 
-    //Make request to database to get the number of variants for the current window
+    //Make request to database to get the number of variants for the current window.
+    //Wait database query result.
     var variantDensity = await getCounts(db, query, newParam);
 
-    console.log(variantDensity);
-    return(variantDensity);
+    console.log("density: " + variantDensity.density);
+    return(variantDensity.density);
 }   
 
+
+//Callback used in sqlite3.Database.all is async: the code is executed without any waiting.
+//Variable cannot be assigned into the callback function of all without waiting.
+//Creation of asyncheonous function to get result from database.
 async function getCounts(db, query, newParam){
     return new Promise(function(resolve, reject){
         db.get(query, newParam, function(err, row){
