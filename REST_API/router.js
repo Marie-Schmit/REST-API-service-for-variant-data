@@ -258,14 +258,19 @@ function calculateDensity(maxPosition, parameters, startPosition, endPosition, d
     }
 
     //Make request to database to get the number of variants for the current window
-    db.all(query, parameters, function (err, rows) {
-        if (err) {
-            throw err;
-        }
-        console.log(rows);
-        density.push(rows[0].density);
-        console.log(density);
-    });
+    async function db_all(query, parameters){
+        return new Promise(function(resolve, reject){
+            db.all(query, parameters, function (err, rows) {
+                if (err) {
+                    throw err;
+                }
+                console.log(rows);
+                resolve(rows);
+            });
+        });
+    }
+
+    await db_all(query, parameters);
 
     return density;
 }      
