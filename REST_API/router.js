@@ -82,20 +82,22 @@ variant_router.get('/variants/number/:type?/:subtype?', function(req, res){
 //Return a list of variants located in a specific region of a specific chromosome in a specific dataset
 variant_router.get('/variants/region/:genome/:chromosome/:startPosition/:endPosition/:type?/:subtype?', function(req, res){
     var parameters;
+    var startQuery = 'SELECT chromosome AS chromosome, position AS position, (variants.position + LENGTH(variants.alteration)) AS end, reference AS ref, alteration AS alt, ' +
+        'genomes.genome_id AS genome, ' +
+        'variants_observed.quality AS qual, variants_observed.filter AS filter, ' +
+        'infos.extra_info AS info, infos.info_format, infos.info_values ' +
+        'FROM variants JOIN variants_observed ON variants.variant_id = variants_observed.variant_id ' +
+        'JOIN genomes ON variants_observed.genome_id = genomes.genome_id ' +
+        'JOIN infos ON variants_observed.info_id = infos.info_id ' +
+        'WHERE genomes.genome_id = ? AND chromosome = ? ' +
+        'AND variants.position >= ? AND variants.position <= ? AND (variants.position + LENGTH(variants.alteration)) <= ? '
+
     //If no type of variant precised
     if (req.params.type){
         if(req.params.subtype){
-            query = 'SELECT chromosome AS chromosome, position AS position, (variants.position + LENGTH(variants.alteration)) AS end, reference AS ref, alteration AS alt, ' +
-            'genomes.genome_id AS genome, ' +
-            'variants_observed.quality AS qual, variants_observed.filter AS filter, ' +
-            'infos.extra_info AS info, infos.info_format, infos.info_values ' +
-            'FROM variants JOIN variants_observed ON variants.variant_id = variants_observed.variant_id ' +
-            'JOIN genomes ON variants_observed.genome_id = genomes.genome_id ' +
-            'JOIN infos ON variants_observed.info_id = infos.info_id ' +
-            'WHERE genomes.genome_id = ? AND chromosome = ? ' +
-            'AND variants.position >= ? AND variants.position <= ? AND (variants.position + LENGTH(variants.alteration)) <= ? ' +
-            'AND variants.var_type = ? AND variants.var_subtype = ? ' +
-            'ORDER BY variants.chromosome;';
+            query = startQuery +
+                'AND variants.var_type = ? AND variants.var_subtype = ? ' +
+                'ORDER BY variants.chromosome;';
             console.log(query);
             //Query parameters taking place of placeholdes in SQL query string
             parameters = [
@@ -109,17 +111,9 @@ variant_router.get('/variants/region/:genome/:chromosome/:startPosition/:endPosi
             ];
         }
         else{
-            query = 'SELECT chromosome AS chromosome, position AS position, (variants.position + LENGTH(variants.alteration)) AS end, reference AS ref, alteration AS alt, ' +
-            'genomes.genome_id AS genome, ' +
-            'variants_observed.quality AS qual, variants_observed.filter AS filter, ' +
-            'infos.extra_info AS info, infos.info_format, infos.info_values ' +
-            'FROM variants JOIN variants_observed ON variants.variant_id = variants_observed.variant_id ' +
-            'JOIN genomes ON variants_observed.genome_id = genomes.genome_id ' +
-            'JOIN infos ON variants_observed.info_id = infos.info_id ' +
-            'WHERE genomes.genome_id = ? AND chromosome = ? ' +
-            'AND variants.position >= ? AND variants.position <= ? AND (variants.position + LENGTH(variants.alteration)) <= ? ' +
-            'AND variants.var_type = ?' +
-            'ORDER BY variants.chromosome;';
+            query = startQuery +
+                'AND variants.var_type = ?' +
+                'ORDER BY variants.chromosome;';
             console.log(query);
             //Query parameters taking place of placeholdes in SQL query string
             parameters = [
@@ -133,15 +127,7 @@ variant_router.get('/variants/region/:genome/:chromosome/:startPosition/:endPosi
         }
     }
     else{
-        query = 'SELECT chromosome AS chromosome, position AS position, (variants.position + LENGTH(variants.alteration)) AS end, reference AS ref, alteration AS alt, ' +
-            'genomes.genome_id AS genome, ' +
-            'variants_observed.quality AS qual, variants_observed.filter AS filter, ' +
-            'infos.extra_info AS info, infos.info_format, infos.info_values ' +
-            'FROM variants JOIN variants_observed ON variants.variant_id = variants_observed.variant_id ' +
-            'JOIN genomes ON variants_observed.genome_id = genomes.genome_id ' +
-            'JOIN infos ON variants_observed.info_id = infos.info_id ' +
-            'WHERE genomes.genome_id = ? AND chromosome = ? ' +
-            'AND variants.position >= ? AND variants.position <= ? AND (variants.position + LENGTH(variants.alteration)) <= ? ' +
+        query = startQuery +
             'ORDER BY variants.chromosome;';
             console.log(query);
         //Query parameters taking place of placeholdes in SQL query string
@@ -160,4 +146,11 @@ variant_router.get('/variants/region/:genome/:chromosome/:startPosition/:endPosi
         }
         res.json(rows); //Results sent as JSON objects
     });
+});
+
+//Using an R script, report and plot the variants (SNPNs, InDels or both) density for a specific window size
+//accross a specific chromosome and for a specific genome
+variant_router.get('/variants/density/:genome/:chromosome/:windowSize/:type?/:subtype?', function(req, res){
+    //Select the maximal position of a variant for the specified genome and chromosome
+    var startQuery = 'SELECT '
 });

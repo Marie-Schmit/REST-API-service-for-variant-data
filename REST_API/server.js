@@ -3,6 +3,7 @@ const { response } = require('express');
 const express = require('express');
 const app = express();
 
+//Endpoints return JSON as a response
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
 
