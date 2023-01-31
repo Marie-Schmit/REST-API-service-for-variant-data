@@ -98,7 +98,6 @@ variant_router.get('/variants/region/:genome/:chromosome/:startPosition/:endPosi
             query = startQuery +
                 'AND variants.var_type = ? AND variants.var_subtype = ? ' +
                 'ORDER BY variants.chromosome;';
-            console.log(query);
             //Query parameters taking place of placeholdes in SQL query string
             parameters = [
                 req.params.genome,
@@ -114,7 +113,6 @@ variant_router.get('/variants/region/:genome/:chromosome/:startPosition/:endPosi
             query = startQuery +
                 'AND variants.var_type = ?' +
                 'ORDER BY variants.chromosome;';
-            console.log(query);
             //Query parameters taking place of placeholdes in SQL query string
             parameters = [
                 req.params.genome,
@@ -129,7 +127,6 @@ variant_router.get('/variants/region/:genome/:chromosome/:startPosition/:endPosi
     else {
         query = startQuery +
             'ORDER BY variants.chromosome;';
-        console.log(query);
         //Query parameters taking place of placeholdes in SQL query string
         parameters = [
             req.params.genome,
@@ -166,7 +163,6 @@ variant_router.get('/variants/density/:genome/:chromosome/:windowSize/:type?/:su
             if (req.params.subtype) {
                 query = startQuery +
                     ' AND variants.var_type = ? AND variants.var_subtype = ?;';
-                console.log(query);
                 //Query parameters taking place of placeholdes in SQL query string
                 parameters = [
                     req.params.genome,
@@ -178,7 +174,6 @@ variant_router.get('/variants/density/:genome/:chromosome/:windowSize/:type?/:su
             else {
                 query = startQuery +
                     ' AND variants.var_type = ?';
-                console.log(query);
                 //Query parameters taking place of placeholdes in SQL query string
                 parameters = [
                     req.params.genome,
@@ -189,7 +184,6 @@ variant_router.get('/variants/density/:genome/:chromosome/:windowSize/:type?/:su
         }
         else {
             query = startQuery;
-            console.log(query);
             //Query parameters taking place of placeholdes in SQL query string
             parameters = [
                 req.params.genome,
@@ -225,7 +219,6 @@ function variantDensity(maxPosition, parameters, windowSize, res) {
     for (i = 0; i <= maxWindows; i++) {
         //For the current window, calculate array density
         calculateDensity(maxPosition, parameters, startPosition, endPosition);
-        console.log(variantDensity);
 
         startPosition += windowSize;
         endPosition += windowSize;
@@ -255,15 +248,26 @@ function calculateDensity(maxPosition, parameters, startPosition, endPosition) {
     }
 
     //Make request to database to get the number of variants for the current window
-    var variantDensity = function(callback){
+    var variantDensity = function(){
+        return new Promise(function(resolve, reject){
+            var responseObject;
+
             db.all(query, parameters, function (err, rows) {
                 if (err) {
                     throw err;
+                    reject(responseObject);
                 }
-                console.log(util.inspect(rows));
-                callback(rows);
+                
+                else{
+                    responseObject = {
+                        statement: this,
+                        rows: rows
+                    };
+                    resolve(responseObject);
+                }
             });
+        });
     }
 
-    console.log(variantDensity);
+    console.log(responseObject);
 }      
