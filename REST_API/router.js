@@ -224,7 +224,7 @@ function variantDensity(maxPosition, parameters, windowSize, res) {
     const variantDensity = [];
     for (i = 0; i <= maxWindows; i++) {
         //For the current window, calculate array density
-        calculateDensity(maxPosition, parameters, startPosition, endPosition, variantDensity);
+        calculateDensity(maxPosition, parameters, startPosition, endPosition);
         console.log(variantDensity);
 
         startPosition += windowSize;
@@ -232,7 +232,7 @@ function variantDensity(maxPosition, parameters, windowSize, res) {
     }
 }
 
-function calculateDensity(maxPosition, parameters, startPosition, endPosition, density) {
+function calculateDensity(maxPosition, parameters, startPosition, endPosition) {
     const startQuery = 'SELECT COUNT(variants.variant_id) AS density FROM variants ' +
         'JOIN variants_observed ON variants_observed.variant_id = variants.variant_id ' +
         'JOIN genomes ON variants_observed.genome_id = genomes.genome_id ' +
@@ -246,31 +246,24 @@ function calculateDensity(maxPosition, parameters, startPosition, endPosition, d
 
     if (parameters.length > 4) { //Condition on type
         var query = startQuery + ' AND variants.var_type = ?' + endQuery;
-        console.log(query);
 
         if (parameters.length > 5) //Condition on subtype{
             var query = startQuery + ' AND variants.var_type = ? AND variants.var_subtype = ?' + endQuery;
-            console.log(query);
     }
     else {
         var query = startQuery + endQuery;
-        console.log(query);
     }
 
     //Make request to database to get the number of variants for the current window
-    async function db_all(query, parameters){
-        return new Promise(function(resolve, reject){
+    var variantDensity = function(callback){
             db.all(query, parameters, function (err, rows) {
                 if (err) {
                     throw err;
                 }
-                console.log(rows);
-                resolve(rows);
+                console.log(util.inspect(rows));
+                callback(rows);
             });
-        });
     }
 
-    await db_all(query, parameters);
-
-    return density;
+    console.log(variantDensity);
 }      
