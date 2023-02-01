@@ -80,7 +80,7 @@ density_router.get('/density/:genome/:chromosome/:windowSize/:type?/:subtype?', 
     }
 });
 
-
+//Caclulate variant density accross given window size, returns densities as arrays
 async function variantDensity(maxPosition, parameters, windowSize) {
     //Store maximal number of windows
     maxWindows = Math.ceil(maxPosition / windowSize); //Results sent as JSON objects
@@ -98,17 +98,16 @@ async function variantDensity(maxPosition, parameters, windowSize) {
     for (i = 0; i <= maxWindows; i++) {
         console.log("\n\n Start: " + startPosition);
         console.log("End: " + endPosition);
-        //For the current window, calculate value of density and add it to array
-        //variantDensity.push(calculateDensity(maxPosition, parameters, startPosition, endPosition));
 
+        //For the current window, calculate value of density and add it to array
+        //Use await to manage async functions (wait for calculateDensity execution)
         promise = await (calculateDensity(maxPosition, parameters, startPosition, endPosition));
         variantDensity.push(promise);//Get value of promise function (async)
 
+        //Window start and end position actualisation
         startPosition += windowSize;
         endPosition += windowSize;
     }
-
-    console.log("var density final: " + variantDensity);
     //Return array of variant density
     return (variantDensity);
 }
@@ -129,13 +128,14 @@ async function calculateDensity(maxPosition, parameters, startPosition, endPosit
         newParam.push(parameters[j]);
     }
 
+    //STart and end positions are new parameters
     newParam.push(startPosition);
     newParam.push(endPosition);
 
     if (newParam.length > 4) { //Condition on type
         var query = startQuery + ' AND variants.var_type = ?' + endQuery;
 
-        if (newParam.length > 5) //Condition on subtype{
+        if (newParam.length > 5) //Condition on subtype
             var query = startQuery + ' AND variants.var_type = ? AND variants.var_subtype = ?' + endQuery;
     }
     else {
