@@ -4,10 +4,10 @@ library(ggplot2)
 #* @apiTitle
 
 #* @serializer png
-#* @get /api/variants/density/plot/<genome>/<chromosome>/<windowSize>/
+#* @get /apiDens/density/plot/<genome>/<chromosome>/<windowSize>/
 function(genome, chromosome, windowSize, type = "", subtype =""){
   #Define url
-  url <- paste("http://localhost:3000/api/variants/density/", genome, "/", chromosome, "/", windowSize, sep = '')
+  url <- paste("http://localhost:3000/apiDens/density/", genome, "/", chromosome, "/", windowSize, sep = '')
   if(type != ""){ 
     #Type is given as argument
     if(type != ""){
