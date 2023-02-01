@@ -261,7 +261,49 @@ variant_router.get('/variants/quality/:genome/:chromosome/:quality/:type?/:subty
     });
 });
 
-//Display variants having a minimal quality per genome per chromosome
+
+//Display variants having a minimal depth per genome per chromosome
+//Display variants that have a minimal quality per genome per chromosome
+variant_router.get('/variants/depth/:genome/:chromosome/:depth/:type?/:subtype?', function (req, res) {
+    var parameters = [
+        req.params.genome,
+        req.params.chromosome,
+        req.params.depth
+    ];
+
+    var query = 'SELECT variants.chromosome AS chromosome,variants.position AS position, variants_observed.genome_id AS genome, ' +  
+                'variants_observed.quality AS qual, variants_observed.filter AS filter, ' +
+                'infos.extra_info AS info ' +
+                'FROM variants_observed JOIN variants ON variants_observed.variant_id = variants.variant_id ' +
+                'JOIN infos ON variants_observed.info_id = infos.info_id ' +
+                'WHERE variants_observed.genome_id = ? AND variants.chromosome = ? ' +
+                'AND (SELECT CAST(SUBSTRING(infos.extra_info, INSTR(infos.extra_info, "DP=") + 3, 4) as INTEGER)) > ? '
+
+    //If no type of variant precised
+    if (req.params.type) {
+        if (req.params.subtype) {
+            query += ' AND variants.var_type = ? AND variants.var_subtype = ?'
+            //Query parameters taking place of placeholdes in SQL query string
+            parameters.push(req.params.type);
+            parameters.push(req.params.subtype);
+        }
+        else {
+            query +=' AND variants.var_type = ?'
+            //Query parameters taking place of placeholdes in SQL query string
+            parameters.push(req.params.type);
+     
+        }
+    }
+    query += ';';
+
+    console.log(parameters);
+    db.all(query, parameters, function (err, rows) {
+        if (err) {
+            throw err;
+        }
+        res.json(rows); //Results sent as JSON objects
+    });
+});
 
 
 //Calculate mean depth per genome per chromosome
