@@ -28,12 +28,14 @@ function(genome, chromosome, windowSize, type = "", subtype =""){
   
   df <- fromJSON(response)
   print(df$Window)
+  
   #Histogram
   b <- ggplot(df$Window, aes(x = StartPosition, y = Density)) +
     geom_bar(stat = "identity", fill = "steelblue") +
     ggtitle(paste("Density of variants for genome ", genome, " and chromosome ", chromosome)) +
-    xlab(paste("Variant density per window of ", windowSize, " bases")) +
-    ylab("Base")
+    ylab(paste("Variant density per window of ", windowSize, " bases")) +
+    xlab("Bases") 
+    #+ geom_density(alpha = .2, fill = "salmon", aes(y = Density))
   print(b)
 }
 
