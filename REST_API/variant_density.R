@@ -1,32 +1,40 @@
 library(plumber)
+library(ggplot2)
 
 #* @apiTitle
 
 #* @serializer png
-#* @get /api/variants/density/plot/<genome>/<chromosome>/<windowSize>/<type>/<subtype>
-function(genome, chromosome, windowSize, type = "", subtype = ""){
+#* @get /api/variants/density/plot/<genome>/<chromosome>/<windowSize>/
+function(genome, chromosome, windowSize, type = "", subtype =""){
+  #Define url
+  url <- paste("http://localhost:3000/api/variants/density/", genome, "/", chromosome, "/", windowSize, sep = '')
   if(type != ""){ 
     #Type is given as argument
-    if(subtype != ""){
+    if(type != ""){
       #Subtype is given as parameter
-      request <- GET(paste("http://localhost:3000/api/variants/density/"), 
-                     genome, "/", chromosome, "/", windowSize, "/", type, sep = '')
+      url <- paste(url, "/", type, "/", subtype, sep = '')
     }
     else{ 
       #Subtype not provided, only type is a parameter
-      request <- GET(paste("http://localhost:3000/api/variants/density/"), 
-                     genome, "/", chromosome, "/", windowSize, sep = '')
+      url <- paste(url, "/", type, sep = '')
     }
   }
-  else{
-    #Neither type nor subtype are parameters
-    request <- GET(paste("http://localhost:3000/api/variants/density/"), 
-                   genome, "/", chromosome, "/", windowSize, "/", type, "/", subtype, sep = '')
-  }
+
+  print(url);
   
+  #Send request
+  request <- GET(url);
   response <- content(request, as = "text", encoding = "UTF-8")
+  
   df <- fromJSON(response)
-  print(df);
+  print(df$Window)
+  #Histogram
+  b <- ggplot(df$Window, aes(x = StartPosition, y = Density)) +
+    geom_bar(stat = "identity", fill = "steelblue") +
+    ggtitle(paste("Density of variants for genome ", genome, " and chromosome ", chromosome)) +
+    xlab(paste("Variant density per window of ", windowSize, " bases")) +
+    ylab("Base")
+  print(b)
 }
 
 
