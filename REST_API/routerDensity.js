@@ -14,9 +14,10 @@ const db = new sqlite3.Database("../Database/variants_database.sqlite")
 const rscript = require('r-script-with-bug-fixes');
 const { result } = require('underscore');
 
+
 //Using an R script, report and plot the variants (SNPNs, InDels or both) density for a specific window size
 //accross a specific chromosome and for a specific genome
-density_router.get('/:genome/:chromosome/:windowSize/:type?/:subtype?', function (req, res) {
+density_router.get('/density/:genome/:chromosome/:windowSize/:type?/:subtype?', function (req, res) {
     if (req.params.windowSize == 0) {
         res.send("Window size is null. Please select a new window size.");
     }
@@ -68,7 +69,7 @@ density_router.get('/:genome/:chromosome/:windowSize/:type?/:subtype?', function
             //Get array of variant density accross every chosen windows
             //var varDensity = variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize));
             //Save result in a json and display
-            Promise.all([variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize))], db).then(function ([varDensity]) {
+            Promise.all([variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize))]).then(function ([varDensity]) {
                 console.log("in");
                 var resultDensity = jsonResult(parameters, req.params.windowSize, varDensity);
                 console.log(resultDensity);
@@ -79,7 +80,8 @@ density_router.get('/:genome/:chromosome/:windowSize/:type?/:subtype?', function
     }
 });
 
-async function variantDensity(maxPosition, parameters, windowSize, db) {
+
+async function variantDensity(maxPosition, parameters, windowSize) {
     //Store maximal number of windows
     maxWindows = Math.ceil(maxPosition / windowSize); //Results sent as JSON objects
 
@@ -111,7 +113,7 @@ async function variantDensity(maxPosition, parameters, windowSize, db) {
     return (variantDensity);
 }
 
-async function calculateDensity(maxPosition, parameters, startPosition, endPosition, db) {
+async function calculateDensity(maxPosition, parameters, startPosition, endPosition) {
     const startQuery = 'SELECT COUNT(variants.variant_id) AS density FROM variants ' +
         'JOIN variants_observed ON variants_observed.variant_id = variants.variant_id ' +
         'JOIN genomes ON variants_observed.genome_id = genomes.genome_id ' +

@@ -1,6 +1,3 @@
-//Import functiosn from utils
-const {variantDensity, jsonResult} = require('./utils');
-
 //Separate server deployment of server from handling of routes
 //Contains modular Router
 

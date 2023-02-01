@@ -12,6 +12,7 @@ const port = 3000;
 
 //Import router
 const router = require('./router');
+const routerDensity = require('./routerDensity');
 
 //Respond to data requests
 app.listen(port, function(){
@@ -20,3 +21,4 @@ app.listen(port, function(){
 
 //Attach router to a path for API
 app.use('/api', router);
+app.use('/apiDens', routerDensity);
