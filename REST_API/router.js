@@ -222,68 +222,49 @@ variant_router.get('/variants/zygosity/:genome/:chromosome/:zygosity/:startPosit
 });
 
 
+//Display variants that have a minimal quality per genome per chromosome
+variant_router.get('/variants/quality/:genome/:chromosome/:quality/:type?/:subtype?', function (req, res) {
+    var parameters = [
+        req.params.genome,
+        req.params.chromosome,
+        req.params.quality
+    ];
 
-//Using an R script, report and plot the variants (SNPNs, InDels or both) density for a specific window size
-//accross a specific chromosome and for a specific genome
-variant_router.get('/variants/density/:genome/:chromosome/:windowSize/:type?/:subtype?', function (req, res) {
-    if (req.params.windowSize == 0) {
-        res.send("Window size is null. Please select a new window size.");
-    }
-    else {
-        var maxWindows;
-        //Select the maximal position of a variant for the specified genome and chromosome
-        var startQuery = 'SELECT MAX(variants.position) AS maxPos FROM variants ' +
-            'JOIN variants_observed ON variants_observed.variant_id = variants.variant_id ' +
-            'JOIN genomes ON variants_observed.genome_id = genomes.genome_id ' +
-            'AND genomes.genome_id = ? AND variants.chromosome = ?';
+    var query = 'SELECT variants.chromosome AS chromosome,variants.position AS position, variants_observed.genome_id AS genome, ' +  
+                'variants_observed.quality AS qual, variants_observed.filter AS filter ' +
+                'FROM variants_observed JOIN variants ON variants_observed.variant_id = variants.variant_id ' +
+                'WHERE variants_observed.genome_id = ? AND variants.chromosome = ? ' +
+                'AND variants_observed.quality >= ?'
 
-        if (req.params.type) {
-            if (req.params.subtype) {
-                query = startQuery +
-                    ' AND variants.var_type = ? AND variants.var_subtype = ?;';
-                //Query parameters taking place of placeholdes in SQL query string
-                parameters = [
-                    req.params.genome,
-                    req.params.chromosome,
-                    req.params.type,
-                    req.params.subtype
-                ];
-            }
-            else {
-                query = startQuery +
-                    ' AND variants.var_type = ?';
-                //Query parameters taking place of placeholdes in SQL query string
-                parameters = [
-                    req.params.genome,
-                    req.params.chromosome,
-                    req.params.type
-                ];
-            }
+    //If no type of variant precised
+    if (req.params.type) {
+        if (req.params.subtype) {
+            query += 'WHERE variants.var_type = ? AND variants.var_subtype = ?'
+            //Query parameters taking place of placeholdes in SQL query string
+            parameters.push(req.params.type);
+            parameters.push(req.params.subtype);
         }
         else {
-            query = startQuery;
+            query +='WHERE variants.var_type = ? '
             //Query parameters taking place of placeholdes in SQL query string
-            parameters = [
-                req.params.genome,
-                req.params.chromosome
-            ];
+            parameters.push(req.params.type);
         }
-        console.log(parameters);
-
-        db.all(query, parameters, function (err, rows) {
-            if (err) {
-                throw err;
-            }
-            //Get array of variant density accross every chosen windows
-            //var varDensity = variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize));
-            //Save result in a json and display
-            Promise.all([variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize))], db).then(function ([varDensity]) {
-                console.log("in");
-                var resultDensity = jsonResult(parameters, req.params.windowSize, varDensity);
-                console.log(resultDensity);
-                console.log("out");
-                res.json(resultDensity);
-            })
-        });
     }
+    query += ';';
+
+    console.log(parameters);
+    db.all(query, parameters, function (err, rows) {
+        if (err) {
+            throw err;
+        }
+        res.json(rows); //Results sent as JSON objects
+    });
 });
+
+//Display variants having a minimal quality per genome per chromosome
+
+
+//Calculate mean depth per genome per chromosome
+
+
+//Calculate mean quality per genome per chromosome
