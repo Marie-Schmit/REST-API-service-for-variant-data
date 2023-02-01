@@ -35,41 +35,28 @@ variant_router.get('/genomes', function (req, res) {
 //List the number of variants (SNPs, InDels, or both) contained in each genome, grouped by chromosome
 //The type of variant (SNP, InDel) is an optional parameter, as well as their subtype (Insertion, Deletion for InDel)
 variant_router.get('/variants/number/:type?/:subtype?', function (req, res) {
-    var parameters;
+    var parameters = [];
+    var query = 'SELECT genome_id, chromosome, COUNT(variants.variant_id) AS variant_number ' +
+                'FROM variants ' +
+                'JOIN variants_observed ON variants.variant_id = variants_observed.variant_id '
     //If no type of variant precised
     if (req.params.type) {
         if (req.params.subtype) {
-            query = 'SELECT genome_id, chromosome, COUNT(variants.variant_id) AS variant ' +
-                'FROM variants ' +
-                'JOIN variants_observed ON variants.variant_id = variants_observed.variant_id ' +
-                'WHERE variants.var_type = ? AND variants.var_subtype = ?' +
-                'GROUP BY variants_observed.genome_id, variants.chromosome;';
+            query += 'WHERE variants.var_type = ? AND variants.var_subtype = ?'
             //Query parameters taking place of placeholdes in SQL query string
-            parameters = [
-                req.params.type,
-                req.params.subtype
-            ];
+            parameters.push(req.params.type);
+            parameters.push(req.params.subtype);
         }
         else {
-            query = 'SELECT genome_id, chromosome, COUNT(variants.variant_id) AS variant ' +
-                'FROM variants ' +
-                'JOIN variants_observed ON variants.variant_id = variants_observed.variant_id ' +
-                'WHERE variants.var_type = ? ' +
-                'GROUP BY variants_observed.genome_id, variants.chromosome;';
+            query +='WHERE variants.var_type = ? '
             //Query parameters taking place of placeholdes in SQL query string
             parameters = [
                 req.params.type
             ];
         }
     }
-    else {
-        query = 'SELECT genome_id, chromosome, COUNT(variants.variant_id) AS variant ' +
-            'FROM variants ' +
-            'JOIN variants_observed ON variants.variant_id = variants_observed.variant_id ' +
-            'GROUP BY variants_observed.genome_id, variants.chromosome;';
-        //Query parameters taking place of placeholdes in SQL query string
-        parameters = [];
-    }
+    query += 'GROUP BY variants_observed.genome_id, variants.chromosome;';
+
     console.log(parameters);
     db.all(query, parameters, function (err, rows) {
         if (err) {
