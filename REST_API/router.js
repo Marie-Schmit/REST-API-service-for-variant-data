@@ -280,7 +280,7 @@ variant_router.get('/variants/density/:genome/:chromosome/:windowSize/:type?/:su
             //Get array of variant density accross every chosen windows
             //var varDensity = variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize));
             //Save result in a json and display
-            Promise.all([variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize))]).then(function ([varDensity]) {
+            Promise.all([variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize))], db).then(function ([varDensity]) {
                 console.log("in");
                 var resultDensity = jsonResult(parameters, req.params.windowSize, varDensity);
                 console.log(resultDensity);

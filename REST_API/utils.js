@@ -1,4 +1,7 @@
-async function variantDensity(maxPosition, parameters, windowSize) {
+//Import sqlite3
+const {result} = require('./router');
+
+async function variantDensity(maxPosition, parameters, windowSize, db) {
     //Store maximal number of windows
     maxWindows = Math.ceil(maxPosition / windowSize); //Results sent as JSON objects
 
@@ -30,7 +33,7 @@ async function variantDensity(maxPosition, parameters, windowSize) {
     return (variantDensity);
 }
 
-async function calculateDensity(maxPosition, parameters, startPosition, endPosition) {
+async function calculateDensity(maxPosition, parameters, startPosition, endPosition, db) {
     const startQuery = 'SELECT COUNT(variants.variant_id) AS density FROM variants ' +
         'JOIN variants_observed ON variants_observed.variant_id = variants.variant_id ' +
         'JOIN genomes ON variants_observed.genome_id = genomes.genome_id ' +
