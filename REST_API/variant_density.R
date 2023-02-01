@@ -35,7 +35,6 @@ function(genome, chromosome, windowSize, type = "", subtype =""){
     ggtitle(paste("Density of variants for genome ", genome, " and chromosome ", chromosome)) +
     ylab(paste("Variant density per window of ", windowSize, " bases")) +
     xlab("Bases") 
-    #+ geom_density(alpha = .2, fill = "salmon", aes(y = Density))
   print(b)
 }
 
