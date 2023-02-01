@@ -111,6 +111,28 @@ variant_router.get('/variants/region/:genome/:chromosome/:startPosition/:endPosi
         if (err) {
             throw err;
         }
+        console.log(rows);
+        for(i = 0; i < rows.length; i++){
+            //Get info format and values
+            var format = rows[i].info_format;
+            var values = rows[i].info_values;
+
+            //Split on ":"
+            var formats = format.split(":");
+            var values = values.split(":");
+
+            //Store detailed information in a json
+            var information = {};
+            for(var j = 0; j < formats.length; j++){
+                information[formats[j]] = values[j];
+            }
+
+            //Replace detailed information values in rows
+            delete(rows[i].info_format);
+            //Replace info_values with the JSON
+            rows[i].info_values = information;
+        }
+        console.log(rows);
         res.json(rows); //Results sent as JSON objects
     });
 });
