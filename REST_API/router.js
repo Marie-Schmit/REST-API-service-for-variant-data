@@ -69,8 +69,7 @@ variant_router.get('/variants/number/:type?/:subtype?', function (req, res) {
 
 //Return a list of variants located in a specific region of a specific chromosome in a specific dataset
 variant_router.get('/variants/region/:genome/:chromosome/:startPosition/:endPosition/:type?/:subtype?', function (req, res) {
-    var parameters;
-    var startQuery = 'SELECT chromosome AS chromosome, position AS position, (variants.position + LENGTH(variants.alteration)) AS end, reference AS ref, alteration AS alt, ' +
+    var query = 'SELECT chromosome AS chromosome, position AS position, (variants.position + LENGTH(variants.alteration)) AS end, reference AS ref, alteration AS alt, ' +
         'genomes.genome_id AS genome, ' +
         'variants_observed.quality AS qual, variants_observed.filter AS filter, ' +
         'infos.extra_info AS info, infos.info_format, infos.info_values ' +
@@ -80,50 +79,33 @@ variant_router.get('/variants/region/:genome/:chromosome/:startPosition/:endPosi
         'WHERE genomes.genome_id = ? AND chromosome = ? ' +
         'AND variants.position >= ? AND variants.position <= ? AND (variants.position + LENGTH(variants.alteration)) <= ? '
 
+    //Query parameters taking place of placeholdes in SQL query string
+    var parameters = [
+        req.params.genome,
+        req.params.chromosome,
+        req.params.startPosition,
+        req.params.endPosition,
+        req.params.endPosition
+    ];
+
     //If no type of variant precised
     if (req.params.type) {
         if (req.params.subtype) {
-            query = startQuery +
-                'AND variants.var_type = ? AND variants.var_subtype = ? ' +
-                'ORDER BY variants.chromosome;';
-            //Query parameters taking place of placeholdes in SQL query string
-            parameters = [
-                req.params.genome,
-                req.params.chromosome,
-                req.params.startPosition,
-                req.params.endPosition,
-                req.params.endPosition,
-                req.params.type,
-                req.params.subtype
-            ];
+            query += 'AND variants.var_type = ? AND variants.var_subtype = ? ';
+            //Add types and subtypes to parameters
+            parameters.push(req.params.type);
+            parameters.push(req.params.subtype);
         }
         else {
-            query = startQuery +
-                'AND variants.var_type = ?' +
-                'ORDER BY variants.chromosome;';
-            //Query parameters taking place of placeholdes in SQL query string
-            parameters = [
-                req.params.genome,
-                req.params.chromosome,
-                req.params.startPosition,
-                req.params.endPosition,
-                req.params.endPosition,
-                req.params.type
-            ];
+            query +='AND variants.var_type = ? ';
+            //Add types and subtypes two parameters
+            parameters.push(req.params.type);
         }
     }
-    else {
-        query = startQuery +
-            'ORDER BY variants.chromosome;';
-        //Query parameters taking place of placeholdes in SQL query string
-        parameters = [
-            req.params.genome,
-            req.params.chromosome,
-            req.params.startPosition,
-            req.params.endPosition,
-            req.params.endPosition
-        ];
-    }
+    
+    //Add last line to query
+    query += 'ORDER BY variants.chromosome;';
+
     console.log(parameters);
     db.all(query, parameters, function (err, rows) {
         if (err) {
