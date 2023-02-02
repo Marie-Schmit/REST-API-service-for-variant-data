@@ -228,13 +228,13 @@ variant_router.get('/variants/quality/:genome/:chromosome/:quality/:type?/:subty
     //If no type of variant precised
     if (req.params.type) {
         if (req.params.subtype) {
-            query += 'WHERE variants.var_type = ? AND variants.var_subtype = ?'
+            query += ' AND variants.var_type = ? AND variants.var_subtype = ?'
             //Query parameters taking place of placeholdes in SQL query string
             parameters.push(req.params.type);
             parameters.push(req.params.subtype);
         }
         else {
-            query +='WHERE variants.var_type = ? '
+            query +=' AND variants.var_type = ? '
             //Query parameters taking place of placeholdes in SQL query string
             parameters.push(req.params.type);
         }
@@ -265,18 +265,18 @@ variant_router.get('/variants/depth/:genome/:chromosome/:depth/:type?/:subtype?'
                 'FROM variants_observed JOIN variants ON variants_observed.variant_id = variants.variant_id ' +
                 'JOIN infos ON variants_observed.info_id = infos.info_id ' +
                 'WHERE variants_observed.genome_id = ? AND variants.chromosome = ? ' +
-                'AND (SELECT CAST(SUBSTRING(infos.extra_info, INSTR(infos.extra_info, "DP=") + 3, 4) as INTEGER)) > ? '
+                'AND (SELECT CAST(SUBSTRING(infos.extra_info, INSTR(infos.extra_info, "DP=") + 3, 4) as INTEGER)) > ? ';
 
     //If no type of variant precised
     if (req.params.type) {
         if (req.params.subtype) {
-            query += ' AND variants.var_type = ? AND variants.var_subtype = ?'
+            query += ' AND variants.var_type = ? AND variants.var_subtype = ?';
             //Query parameters taking place of placeholdes in SQL query string
             parameters.push(req.params.type);
             parameters.push(req.params.subtype);
         }
         else {
-            query +=' AND variants.var_type = ?'
+            query +=' AND variants.var_type = ?';
             //Query parameters taking place of placeholdes in SQL query string
             parameters.push(req.params.type);
      
@@ -294,8 +294,6 @@ variant_router.get('/variants/depth/:genome/:chromosome/:depth/:type?/:subtype?'
 
 
 //Calculate mean depth and mean quality per genome per chromosome
-//Display variants having a minimal depth per genome per chromosome
-//Display variants that have a minimal quality per genome per chromosome
 variant_router.get('/variants/meanDepthQuality/:genome/:chromosome/:type?/:subtype?', function (req, res) {
     var parameters = [
         req.params.genome,
