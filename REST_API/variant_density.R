@@ -27,7 +27,7 @@ function(genome, chromosome, windowSize, type = "", subtype =""){
   response <- content(request, as = "text", encoding = "UTF-8")
   
   df <- fromJSON(response)
-  print(df$Window)
+
   
   #Histogram
   b <- ggplot(df$Window, aes(x = StartPosition, y = Density)) +

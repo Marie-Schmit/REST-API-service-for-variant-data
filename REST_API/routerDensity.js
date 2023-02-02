@@ -60,7 +60,6 @@ density_router.get('/density/:genome/:chromosome/:windowSize/:type?/:subtype?', 
                 req.params.chromosome
             ];
         }
-        console.log(parameters);
 
         db.all(query, parameters, function (err, rows) {
             if (err) {
@@ -134,8 +133,6 @@ async function calculateDensity(maxPosition, parameters, startPosition, endPosit
     //Make request to database to get the number of variants for the current window.
     //Wait database query result.
     var variantDensity = await getCounts(db, query, newParam);
-
-    console.log("density: " + variantDensity.density);
     return (variantDensity.density);
 }
 

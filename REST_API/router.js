@@ -57,7 +57,6 @@ variant_router.get('/variants/number/:type?/:subtype?', function (req, res) {
     }
     query += 'GROUP BY variants_observed.genome_id, variants.chromosome;';
 
-    console.log(parameters);
     db.all(query, parameters, function (err, rows) {
         if (err) {
             throw err;
@@ -106,12 +105,10 @@ variant_router.get('/variants/region/:genome/:chromosome/:startPosition/:endPosi
     //Add last line to query
     query += 'ORDER BY variants.chromosome;';
 
-    console.log(parameters);
     db.all(query, parameters, function (err, rows) {
         if (err) {
             throw err;
         }
-        console.log(rows);
         for(i = 0; i < rows.length; i++){
             //Get info format and values
             var format = rows[i].info_format;
@@ -132,7 +129,6 @@ variant_router.get('/variants/region/:genome/:chromosome/:startPosition/:endPosi
             //Replace info_values with the JSON
             rows[i].info_values = information;
         }
-        console.log(rows);
         res.json(rows); //Results sent as JSON objects
     });
 });
@@ -149,9 +145,6 @@ variant_router.get('/variants/zygosity/:genome/:chromosome/:zygosity/:startPosit
         'JOIN infos ON variants_observed.info_id = infos.info_id ' +
         'WHERE genomes.genome_id = ? AND chromosome = ? ' +
         'AND variants.position >= ? AND variants.position <= ? AND (variants.position + LENGTH(variants.alteration)) <= ? '
-
-
-    console.log(req.params.zygosity);
 
     //Query parameters taking place of placeholdes in SQL query string
     var parameters = [
@@ -185,12 +178,10 @@ variant_router.get('/variants/zygosity/:genome/:chromosome/:zygosity/:startPosit
         query += 'AND infos.info_format LIKE "%GT%" AND (infos.info_values LIKE "%1|0%" OR infos.info_values LIKE "%0|1%")';
     }
 
-    console.log(query);
     
     //Add last line to query
     query += 'ORDER BY variants.chromosome;';
 
-    console.log(parameters);
     db.all(query, parameters, function (err, rows) {
         if (err) {
             throw err;
@@ -250,7 +241,6 @@ variant_router.get('/variants/quality/:genome/:chromosome/:quality/:type?/:subty
     }
     query += ';';
 
-    console.log(parameters);
     db.all(query, parameters, function (err, rows) {
         if (err) {
             throw err;
@@ -294,7 +284,6 @@ variant_router.get('/variants/depth/:genome/:chromosome/:depth/:type?/:subtype?'
     }
     query += ';';
 
-    console.log(parameters);
     db.all(query, parameters, function (err, rows) {
         if (err) {
             throw err;
@@ -337,7 +326,6 @@ variant_router.get('/variants/meanDepthQuality/:genome/:chromosome/:type?/:subty
     }
     query += ';';
 
-    console.log(parameters);
     db.all(query, parameters, function (err, rows) {
         if (err) {
             throw err;
