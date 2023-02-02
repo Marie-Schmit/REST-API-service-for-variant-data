@@ -70,10 +70,7 @@ density_router.get('/density/:genome/:chromosome/:windowSize/:type?/:subtype?', 
             //var varDensity = variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize));
             //Save result in a json and display
             Promise.all([variantDensity(Number(rows[0].maxPos), parameters, Number(req.params.windowSize))]).then(function ([varDensity]) {
-                console.log("in");
                 var resultDensity = jsonResult(parameters, req.params.windowSize, varDensity);
-                console.log(resultDensity);
-                console.log("out");
                 res.json(resultDensity);
             })
         });
@@ -84,11 +81,6 @@ density_router.get('/density/:genome/:chromosome/:windowSize/:type?/:subtype?', 
 async function variantDensity(maxPosition, parameters, windowSize) {
     //Store maximal number of windows
     maxWindows = Math.ceil(maxPosition / windowSize); //Results sent as JSON objects
-
-    console.log("Win size: " + windowSize);
-    console.log("Max position: " + maxPosition);
-    console.log("Max window: " + maxWindows);
-
     var i;
     //Initialise start and end positions
     var startPosition = 0;
@@ -96,9 +88,6 @@ async function variantDensity(maxPosition, parameters, windowSize) {
     //Array containing variant density
     const variantDensity = [];
     for (i = 0; i <= maxWindows; i++) {
-        console.log("\n\n Start: " + startPosition);
-        console.log("End: " + endPosition);
-
         //For the current window, calculate value of density and add it to array
         //Use await to manage async functions (wait for calculateDensity execution)
         promise = await (calculateDensity(maxPosition, parameters, startPosition, endPosition));
@@ -128,7 +117,7 @@ async function calculateDensity(maxPosition, parameters, startPosition, endPosit
         newParam.push(parameters[j]);
     }
 
-    //STart and end positions are new parameters
+    //Start and end positions are new parameters
     newParam.push(startPosition);
     newParam.push(endPosition);
 

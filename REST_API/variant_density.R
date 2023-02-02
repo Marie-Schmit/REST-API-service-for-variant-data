@@ -1,5 +1,7 @@
 library(plumber)
 library(ggplot2)
+library(jsonlite)
+library(httr)
 
 #* @apiTitle
 
@@ -19,8 +21,6 @@ function(genome, chromosome, windowSize, type = "", subtype =""){
       url <- paste(url, "/", type, sep = '')
     }
   }
-
-  print(url);
   
   #Send request
   request <- GET(url);
@@ -34,7 +34,7 @@ function(genome, chromosome, windowSize, type = "", subtype =""){
     geom_bar(stat = "identity", fill = "steelblue") +
     ggtitle(paste("Density of variants for genome ", genome, " and chromosome ", chromosome)) +
     ylab(paste("Variant density per window of ", windowSize, " bases")) +
-    xlab("Bases") 
+    xlab("Bases")
   print(b)
 }
 

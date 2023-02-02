@@ -195,7 +195,6 @@ variant_router.get('/variants/zygosity/:genome/:chromosome/:zygosity/:startPosit
         if (err) {
             throw err;
         }
-        console.log(rows);
         for(i = 0; i < rows.length; i++){
             //Get info format and values
             var format = rows[i].info_format;
@@ -216,7 +215,6 @@ variant_router.get('/variants/zygosity/:genome/:chromosome/:zygosity/:startPosit
             //Replace info_values with the JSON
             rows[i].info_values = information;
         }
-        console.log(rows);
         res.json(rows); //Results sent as JSON objects
     });
 });
